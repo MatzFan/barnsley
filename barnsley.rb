@@ -2,20 +2,20 @@
 
 require 'gosu'
 
-WIDTH = 600
-HEIGHT = 900
+W, H = 600, 900 # window dimensions
 
-class GameWindow < Gosu::Window
-  def initialize
-    super WIDTH, HEIGHT
+class DrawWindow < Gosu::Window
+
+  def initialize(update_interval: 1)
+    super W, H
     self.caption = 'Barnsley fern'
-    @image = Gosu::Image.from_text('.', 8)
+    @dot = Gosu::Image.from_text('.', 8)
     @color = Gosu::Color.new(0xff_00ff00)
     @random = Random.new
     @x, @y = 0, 0
     @points = []
-    @new_points_num = 400
-    @max_points = 360000
+    @new_points_num = `ulimit -s`.chomp.to_i # stack level :)
+    @max_points = 600000
   end
 
   def f1
@@ -41,26 +41,31 @@ class GameWindow < Gosu::Window
     :f1 # least probable last :)
   end
 
-  def transpose(rand)
+  def iterate(rand)
     self.send function(rand)
   end
 
   def new_points(arr = [])
-    arr.size == @new_points_num ? arr : new_points(arr << transpose(rand))
+    arr.size == @new_points_num ? arr : new_points(arr << iterate(rand))
+  end
+
+  def trans_x(x)
+    W/2 + (x * W/6)
+  end
+
+  def trans_y(y)
+    H - (y * H/10)
   end
 
   def update
   end
 
   def draw
-    @points.count < @max_points ? (@points += new_points) : puts('DONE')
-    @points.each do |arr|
-      @xs = WIDTH/2 + (arr.first * WIDTH/6)
-      @ys = HEIGHT - (arr.last * HEIGHT/10)
-      @image.draw(@xs, @ys, 1, 1, 1, @color) # x, y, z-order
-    end
+    @points.count < @max_points ? (@points += new_points) : self.close
+    @points.each { |x, y| @dot.draw(trans_x(x), trans_y(y), 1, 1, 1, @color) }
   end
+
 end
 
-window = GameWindow.new
+window = DrawWindow.new
 window.show
